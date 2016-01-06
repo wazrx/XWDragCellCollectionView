@@ -209,16 +209,15 @@ typedef NS_ENUM(NSUInteger, XWDragCellCollectionViewScrollDirection) {
     if ([self.dataSource respondsToSelector:@selector(dataSourceArrayOfCollectionView:)]) {
         [temp addObjectsFromArray:[self.dataSource dataSourceArrayOfCollectionView:self]];
     }
-    if (temp.count < 2) {
-        return;
-    }
-    if ([self numberOfSections] != 1) {
+    //判断数据源是单个数组还是数组套数组的多section形式，YES表示数组套数组
+    BOOL dataTypeCheck = ([self numberOfSections] != 1 || ([self numberOfSections] == 1 && [temp[0] isKindOfClass:[NSArray class]]));
+    if (dataTypeCheck) {
         for (int i = 0; i < temp.count; i ++) {
             [temp replaceObjectAtIndex:i withObject:[temp[i] mutableCopy]];
         }
     }
     if (_moveIndexPath.section == _originalIndexPath.section) {
-        NSMutableArray *orignalSection = [self numberOfSections] == 1 ? temp : temp[_originalIndexPath.section];
+        NSMutableArray *orignalSection = dataTypeCheck ? temp[_originalIndexPath.section] : temp;
         if (_moveIndexPath.item > _originalIndexPath.item) {
             for (NSUInteger i = _originalIndexPath.item; i < _moveIndexPath.item ; i ++) {
                 [orignalSection exchangeObjectAtIndex:i withObjectAtIndex:i + 1];

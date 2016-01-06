@@ -22,7 +22,6 @@
     UICollectionViewFlowLayout *layout = [UICollectionViewFlowLayout new];
     layout.itemSize = CGSizeMake(80, 80);
     layout.sectionInset = UIEdgeInsetsMake(10, 10, 10, 10);
-    layout.scrollDirection = UICollectionViewScrollDirectionHorizontal;
     XWDragCellCollectionView *mainView = [[XWDragCellCollectionView alloc] initWithFrame:self.view.bounds collectionViewLayout:layout];
     mainView.delegate = self;
     mainView.dataSource = self;
