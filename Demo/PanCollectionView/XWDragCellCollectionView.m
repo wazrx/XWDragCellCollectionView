@@ -39,6 +39,7 @@ typedef NS_ENUM(NSUInteger, XWDragCellCollectionViewScrollDirection) {
 
 - (void)dealloc{
     [self removeObserver:self forKeyPath:@"contentOffset"];
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
 #pragma mark - initailize methods
@@ -347,6 +348,7 @@ typedef NS_ENUM(NSUInteger, XWDragCellCollectionViewScrollDirection) {
     if (_shakeWhenMoveing) {
         [self xwp_shakeAllCell];
         [self addObserver:self forKeyPath:@"contentOffset" options:NSKeyValueObservingOptionNew context:nil];
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(xwp_foreground) name:UIApplicationWillEnterForegroundNotification object:nil];
     }
 }
 
@@ -354,6 +356,7 @@ typedef NS_ENUM(NSUInteger, XWDragCellCollectionViewScrollDirection) {
     _editing = NO;
     _longPressGesture.minimumPressDuration = _oldMinimumPressDuration;
     [self xwp_stopShakeAllCell];
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationWillEnterForegroundNotification object:nil];
 }
 
 
@@ -394,6 +397,14 @@ typedef NS_ENUM(NSUInteger, XWDragCellCollectionViewScrollDirection) {
 
 - (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSString *,id> *)change context:(void *)context{
     [self xwp_shakeAllCell];
+}
+
+#pragma mark - notification
+
+- (void)xwp_foreground{
+    if (_editing) {
+        [self xwp_shakeAllCell];
+    }
 }
 
 @end
