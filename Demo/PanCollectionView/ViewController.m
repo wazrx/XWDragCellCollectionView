@@ -13,21 +13,29 @@
 
 @interface ViewController ()<XWDragCellCollectionViewDataSource, XWDragCellCollectionViewDelegate>
 @property (nonatomic, strong) NSArray *data;
+@property (nonatomic, weak) XWDragCellCollectionView *mainView;
+@property (nonatomic, assign) UIBarButtonItem *editButton;
 @end
 
 @implementation ViewController
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    self.title = @"XWDragCellCollectionView";
     UICollectionViewFlowLayout *layout = [UICollectionViewFlowLayout new];
     layout.itemSize = CGSizeMake(80, 80);
     layout.sectionInset = UIEdgeInsetsMake(10, 10, 10, 10);
     XWDragCellCollectionView *mainView = [[XWDragCellCollectionView alloc] initWithFrame:self.view.bounds collectionViewLayout:layout];
+    _mainView = mainView;
     mainView.delegate = self;
     mainView.dataSource = self;
+    mainView.shakeLevel = 3.0f;
     mainView.backgroundColor = [UIColor whiteColor];
     [mainView registerNib:[UINib nibWithNibName:@"XWCell" bundle:nil] forCellWithReuseIdentifier:@"XWCell"];
     [self.view addSubview:mainView];
+    UIBarButtonItem *editingButton = [[UIBarButtonItem alloc] initWithTitle:@"编辑" style:UIBarButtonItemStylePlain target:self action:@selector(xwp_edting:)];
+    _editButton = editingButton;
+    self.navigationItem.rightBarButtonItem = editingButton;
 }
 
 - (NSArray *)data{
@@ -50,6 +58,19 @@
     return _data;
 }
 
+- (void)xwp_edting:(UIBarButtonItem *)sender{
+    if (_mainView.isEditing) {
+        [_mainView xw_stopEditingModel];
+        sender.title = @"编辑";
+    }else{
+        [_mainView xw_enterEditingModel];
+        sender.title = @"退出";
+    }
+}
+
+
+#pragma mark - <XWDragCellCollectionViewDataSource>
+
 - (NSInteger)numberOfSectionsInCollectionView:(UICollectionView *)collectionView{
     return self.data.count;
 }
@@ -65,17 +86,28 @@
     return cell;
 }
 
-- (void)collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath{
-    XWCellModel *model = _data[indexPath.section][indexPath.item];
-    NSLog(@"%@", model.title);
-}
-
 - (NSArray *)dataSourceArrayOfCollectionView:(XWDragCellCollectionView *)collectionView{
     return _data;
 }
 
+#pragma mark - <XWDragCellCollectionViewDelegate>
+
+- (void)collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath{
+    XWCellModel *model = _data[indexPath.section][indexPath.item];
+    NSLog(@"点击了%@",model.title);
+}
+
 - (void)dragCellCollectionView:(XWDragCellCollectionView *)collectionView newDataArrayAfterMove:(NSArray *)newDataArray{
     _data = newDataArray;
+}
+
+- (void)dragCellCollectionView:(XWDragCellCollectionView *)collectionView cellWillBeginMoveAtIndexPath:(NSIndexPath *)indexPath{
+    //拖动时候最后禁用掉编辑按钮的点击
+    _editButton.enabled = NO;
+}
+
+- (void)dragCellCollectionViewCellEndMoving:(XWDragCellCollectionView *)collectionView{
+    _editButton.enabled = YES;
 }
 
 

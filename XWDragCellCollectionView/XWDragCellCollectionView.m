@@ -27,6 +27,8 @@ typedef NS_ENUM(NSUInteger, XWDragCellCollectionViewScrollDirection) {
 @property (nonatomic, strong) CADisplayLink *edgeTimer;
 @property (nonatomic, assign) CGPoint lastPoint;
 @property (nonatomic, assign) XWDragCellCollectionViewScrollDirection scrollDirection;
+@property (nonatomic, assign) CGFloat oldMinimumPressDuration;
+@property (nonatomic, assign, getter=isObservering) BOOL observering;
 
 @end
 
@@ -34,6 +36,10 @@ typedef NS_ENUM(NSUInteger, XWDragCellCollectionViewScrollDirection) {
 
 @dynamic delegate;
 @dynamic dataSource;
+
+- (void)dealloc{
+    [self removeObserver:self forKeyPath:@"contentOffset"];
+}
 
 #pragma mark - initailize methods
 
@@ -104,10 +110,15 @@ typedef NS_ENUM(NSUInteger, XWDragCellCollectionViewScrollDirection) {
     _tempMoveCell = tempMoveCell;
     _tempMoveCell.frame = cell.frame;
     [self addSubview:_tempMoveCell];
+    
     //开启边缘滚动定时器
     [self xwp_setEdgeTimer];
+    //开启抖动
+    if (_shakeWhenMoveing && !_editing) {
+        [self xwp_shakeAllCell];
+        [self addObserver:self forKeyPath:@"contentOffset" options:NSKeyValueObservingOptionNew context:nil];
+    }
     _lastPoint = [longPressGesture locationOfTouch:0 inView:longPressGesture.view];
-    [self xwp_shakeAllCell];
     //通知代理
     if ([self.delegate respondsToSelector:@selector(dragCellCollectionView:cellWillBeginMoveAtIndexPath:)]) {
         [self.delegate dragCellCollectionView:self cellWillBeginMoveAtIndexPath:_originalIndexPath];
@@ -123,30 +134,9 @@ typedef NS_ENUM(NSUInteger, XWDragCellCollectionViewScrollDirection) {
     }
     CGFloat tranX = [longPressGesture locationOfTouch:0 inView:longPressGesture.view].x - _lastPoint.x;
     CGFloat tranY = [longPressGesture locationOfTouch:0 inView:longPressGesture.view].y - _lastPoint.y;
-    [self xwp_shakeAllCell];
     _tempMoveCell.center = CGPointApplyAffineTransform(_tempMoveCell.center, CGAffineTransformMakeTranslation(tranX, tranY));
     _lastPoint = [longPressGesture locationOfTouch:0 inView:longPressGesture.view];
-    for (UICollectionViewCell *cell in [self visibleCells]) {
-        if ([self indexPathForCell:cell] == _originalIndexPath) {
-            continue;
-        }
-        //计算中心距
-        CGFloat space = sqrtf(pow(_tempMoveCell.center.x - cell.center.x, 2) + powf(_tempMoveCell.center.y - cell.center.y, 2));
-        if (space <= _tempMoveCell.bounds.size.width / 2) {
-            _moveIndexPath = [self indexPathForCell:cell];
-            //更新数据源
-            [self xwp_updateDataSource];
-            //移动
-            [self moveItemAtIndexPath:_originalIndexPath toIndexPath:_moveIndexPath];
-            //通知代理
-            if ([self.delegate respondsToSelector:@selector(dragCellCollectionView:moveCellFromIndexPath:toIndexPath:)]) {
-                [self.delegate dragCellCollectionView:self moveCellFromIndexPath:_originalIndexPath toIndexPath:_moveIndexPath];
-            }
-            //设置移动后的起始indexPath
-            _originalIndexPath = _moveIndexPath;
-            break;
-        }
-    }
+    [self xwp_moveCell];
 }
 
 /**
@@ -181,6 +171,7 @@ typedef NS_ENUM(NSUInteger, XWDragCellCollectionViewScrollDirection) {
     CGFloat level = MAX(1.0f, shakeLevel);
     _shakeLevel = MIN(level, 10.0f);
 }
+
 #pragma mark - timer methods
 
 - (void)xwp_setEdgeTimer{
@@ -199,6 +190,31 @@ typedef NS_ENUM(NSUInteger, XWDragCellCollectionViewScrollDirection) {
 
 
 #pragma mark - private methods
+
+- (void)xwp_moveCell{
+    for (UICollectionViewCell *cell in [self visibleCells]) {
+        if ([self indexPathForCell:cell] == _originalIndexPath) {
+            continue;
+        }
+        //计算中心距
+        CGFloat spacingX = fabs(_tempMoveCell.center.x - cell.center.x);
+        CGFloat spacingY = fabs(_tempMoveCell.center.y - cell.center.y);
+        if (spacingX <= _tempMoveCell.bounds.size.width / 2.0f && spacingY <= _tempMoveCell.bounds.size.height / 2.0f) {
+            _moveIndexPath = [self indexPathForCell:cell];
+            //更新数据源
+            [self xwp_updateDataSource];
+            //移动
+            [self moveItemAtIndexPath:_originalIndexPath toIndexPath:_moveIndexPath];
+            //通知代理
+            if ([self.delegate respondsToSelector:@selector(dragCellCollectionView:moveCellFromIndexPath:toIndexPath:)]) {
+                [self.delegate dragCellCollectionView:self moveCellFromIndexPath:_originalIndexPath toIndexPath:_moveIndexPath];
+            }
+            //设置移动后的起始indexPath
+            _originalIndexPath = _moveIndexPath;
+            break;
+        }
+    }
+}
 
 /**
  *  更新数据源
@@ -233,7 +249,6 @@ typedef NS_ENUM(NSUInteger, XWDragCellCollectionViewScrollDirection) {
         [currentSection insertObject:orignalSection[_originalIndexPath.item] atIndex:_moveIndexPath.item];
         [orignalSection removeObject:orignalSection[_originalIndexPath.item]];
     }
-    //NSLog(@"交换了%zd--%zd 和 %zd--%zd", _originalIndexPath.section, _originalIndexPath.item, _moveIndexPath.section, _moveIndexPath.item);
     //将重排好的数据传递给外部
     if ([self.delegate respondsToSelector:@selector(dragCellCollectionView:newDataArrayAfterMove:)]) {
         [self.delegate dragCellCollectionView:self newDataArrayAfterMove:temp.copy];
@@ -277,9 +292,6 @@ typedef NS_ENUM(NSUInteger, XWDragCellCollectionViewScrollDirection) {
 }
 
 - (void)xwp_shakeAllCell{
-    if (!_shakeWhenMoveing) {
-        return;
-    }
     CAKeyframeAnimation* anim=[CAKeyframeAnimation animation];
     anim.keyPath=@"transform.rotation";
     anim.values=@[@(angelToRandian(-_shakeLevel)),@(angelToRandian(_shakeLevel)),@(angelToRandian(-_shakeLevel))];
@@ -298,7 +310,7 @@ typedef NS_ENUM(NSUInteger, XWDragCellCollectionViewScrollDirection) {
 }
 
 - (void)xwp_stopShakeAllCell{
-    if (!_shakeWhenMoveing) {
+    if (!_shakeWhenMoveing || _editing) {
         return;
     }
     NSArray *cells = [self visibleCells];
@@ -306,6 +318,7 @@ typedef NS_ENUM(NSUInteger, XWDragCellCollectionViewScrollDirection) {
         [cell.layer removeAllAnimations];
     }
     [_tempMoveCell.layer removeAllAnimations];
+    [self removeObserver:self forKeyPath:@"contentOffset"];
 }
 
 - (void)xwp_setScrollDirection{
@@ -325,6 +338,24 @@ typedef NS_ENUM(NSUInteger, XWDragCellCollectionViewScrollDirection) {
     }
 }
 
+#pragma mark - public methods
+
+- (void)xw_enterEditingModel{
+    _editing = YES;
+    _oldMinimumPressDuration =  _longPressGesture.minimumPressDuration;
+    _longPressGesture.minimumPressDuration = 0;
+    if (_shakeWhenMoveing) {
+        [self xwp_shakeAllCell];
+        [self addObserver:self forKeyPath:@"contentOffset" options:NSKeyValueObservingOptionNew context:nil];
+    }
+}
+
+- (void)xw_stopEditingModel{
+    _editing = NO;
+    _longPressGesture.minimumPressDuration = _oldMinimumPressDuration;
+    [self xwp_stopShakeAllCell];
+}
+
 
 #pragma mark - overWrite methods
 
@@ -335,6 +366,34 @@ typedef NS_ENUM(NSUInteger, XWDragCellCollectionViewScrollDirection) {
 - (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event{
     _longPressGesture.enabled = [self indexPathForItemAtPoint:point];
     return [super hitTest:point withEvent:event];
+}
+
+- (void)addObserver:(NSObject *)observer forKeyPath:(NSString *)keyPath options:(NSKeyValueObservingOptions)options context:(void *)context{
+    if ([keyPath isEqualToString:@"contentOffset"]) {
+        if (_observering) {
+            return;
+        }else{
+            _observering = YES;
+        }
+    }
+    [super addObserver:observer forKeyPath:keyPath options:options context:context];
+}
+
+- (void)removeObserver:(NSObject *)observer forKeyPath:(NSString *)keyPath{
+    if ([keyPath isEqualToString:@"contentOffset"]) {
+        if (!_observering) {
+            return;
+        }else{
+            _observering = NO;
+        }
+    }
+    [super removeObserver:observer forKeyPath:keyPath];
+}
+
+#pragma mark - KVO
+
+- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSString *,id> *)change context:(void *)context{
+    [self xwp_shakeAllCell];
 }
 
 @end
