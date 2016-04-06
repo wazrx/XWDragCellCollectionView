@@ -44,7 +44,7 @@
         NSArray *colors = @[[UIColor redColor], [UIColor blueColor], [UIColor yellowColor], [UIColor orangeColor], [UIColor greenColor]];
         for (int i = 0; i < 5; i ++) {
             NSMutableArray *tempSection = @[].mutableCopy;
-            for (int j = 0; j < arc4random() % 6 + 5; j ++) {
+            for (int j = 0; j < arc4random() % 6 + 25; j ++) {
                 NSString *str = [NSString stringWithFormat:@"%d--%d", i, j];
                 XWCellModel *model = [XWCellModel new];
                 model.backGroundColor = colors[i];
