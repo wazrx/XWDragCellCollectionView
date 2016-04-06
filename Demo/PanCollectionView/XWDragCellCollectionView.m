@@ -194,7 +194,7 @@ typedef NS_ENUM(NSUInteger, XWDragCellCollectionViewScrollDirection) {
 
 - (void)xwp_moveCell{
     for (UICollectionViewCell *cell in [self visibleCells]) {
-        if ([self indexPathForCell:cell] == _originalIndexPath) {
+        if ([self indexPathForCell:cell] == _originalIndexPath || cell.hidden == YES) {
             continue;
         }
         //计算中心距
@@ -202,16 +202,20 @@ typedef NS_ENUM(NSUInteger, XWDragCellCollectionViewScrollDirection) {
         CGFloat spacingY = fabs(_tempMoveCell.center.y - cell.center.y);
         if (spacingX <= _tempMoveCell.bounds.size.width / 2.0f && spacingY <= _tempMoveCell.bounds.size.height / 2.0f) {
             _moveIndexPath = [self indexPathForCell:cell];
-            //更新数据源
-            [self xwp_updateDataSource];
-            //移动
-            [self moveItemAtIndexPath:_originalIndexPath toIndexPath:_moveIndexPath];
-            //通知代理
-            if ([self.delegate respondsToSelector:@selector(dragCellCollectionView:moveCellFromIndexPath:toIndexPath:)]) {
-                [self.delegate dragCellCollectionView:self moveCellFromIndexPath:_originalIndexPath toIndexPath:_moveIndexPath];
+            
+            if (![_moveIndexPath isEqual:_originalIndexPath])
+            {
+                //更新数据源
+                [self xwp_updateDataSource];
+                //移动
+                [self moveItemAtIndexPath:_originalIndexPath toIndexPath:_moveIndexPath];
+                //通知代理
+                if ([self.delegate respondsToSelector:@selector(dragCellCollectionView:moveCellFromIndexPath:toIndexPath:)]) {
+                    [self.delegate dragCellCollectionView:self moveCellFromIndexPath:_originalIndexPath toIndexPath:_moveIndexPath];
+                }
+                //设置移动后的起始indexPath
+                _originalIndexPath = _moveIndexPath;
             }
-            //设置移动后的起始indexPath
-            _originalIndexPath = _moveIndexPath;
             break;
         }
     }
