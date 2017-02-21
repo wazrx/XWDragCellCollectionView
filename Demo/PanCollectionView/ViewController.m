@@ -42,9 +42,9 @@
     if (!_data) {
         NSMutableArray *temp = @[].mutableCopy;
         NSArray *colors = @[[UIColor redColor], [UIColor blueColor], [UIColor yellowColor], [UIColor orangeColor], [UIColor greenColor]];
-        for (int i = 0; i < 5; i ++) {
+        for (int i = 0; i < 1; i ++) {
             NSMutableArray *tempSection = @[].mutableCopy;
-            for (int j = 0; j < arc4random() % 6 + 5; j ++) {
+            for (int j = 0; j < 8; j ++) {
                 NSString *str = [NSString stringWithFormat:@"%d--%d", i, j];
                 XWCellModel *model = [XWCellModel new];
                 model.backGroundColor = colors[i];
@@ -108,6 +108,10 @@
 
 - (void)dragCellCollectionViewCellEndMoving:(XWDragCellCollectionView *)collectionView{
     _editButton.enabled = YES;
+}
+
+- (NSArray<NSIndexPath *> *)excludeIndexPathsWhenMoveDragCellCollectionView:(XWDragCellCollectionView *)collectionView{
+    return @[[NSIndexPath indexPathForItem:7 inSection:0]];
 }
 
 

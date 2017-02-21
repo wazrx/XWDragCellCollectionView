@@ -107,6 +107,9 @@ typedef NS_ENUM(NSUInteger, XWDragCellCollectionViewScrollDirection) {
 - (void)xwp_gestureBegan:(UILongPressGestureRecognizer *)longPressGesture{
     //获取手指所在的cell
     _originalIndexPath = [self indexPathForItemAtPoint:[longPressGesture locationOfTouch:0 inView:longPressGesture.view]];
+    if ([self xwp_indexPathIsExcluded:_originalIndexPath]) {
+        return;
+    }
     UICollectionViewCell *cell = [self cellForItemAtIndexPath:_originalIndexPath];
     UIImage *snap;
     UIGraphicsBeginImageContextWithOptions(cell.bounds.size, 1.0f, 0);
@@ -211,7 +214,7 @@ typedef NS_ENUM(NSUInteger, XWDragCellCollectionViewScrollDirection) {
 
 - (void)xwp_moveCell{
     for (UICollectionViewCell *cell in [self visibleCells]) {
-        if ([self indexPathForCell:cell] == _originalIndexPath) {
+        if ([self indexPathForCell:cell] == _originalIndexPath || [self xwp_indexPathIsExcluded:[self indexPathForCell:cell]]) {
             continue;
         }
         //计算中心距
@@ -337,6 +340,9 @@ typedef NS_ENUM(NSUInteger, XWDragCellCollectionViewScrollDirection) {
     anim.duration=0.2;
     NSArray *cells = [self visibleCells];
     for (UICollectionViewCell *cell in cells) {
+        if ([self xwp_indexPathIsExcluded:[self indexPathForCell:cell]]) {
+            continue;
+        }
         /**如果加了shake动画就不用再加了*/
         if (![cell.layer animationForKey:@"shake"]) {
             [cell.layer addAnimation:anim forKey:@"shake"];
@@ -388,6 +394,21 @@ typedef NS_ENUM(NSUInteger, XWDragCellCollectionViewScrollDirection) {
     if (!_observering) return;
     [self removeObserver:self forKeyPath:@"contentOffset"];
     _observering = NO;
+}
+
+- (BOOL)xwp_indexPathIsExcluded:(NSIndexPath *)indexPath{
+    if (!indexPath || ![self.delegate respondsToSelector:@selector(excludeIndexPathsWhenMoveDragCellCollectionView:)]) {
+        return NO;
+    }
+    NSArray<NSIndexPath *> *excludeIndexPaths = [self.delegate excludeIndexPathsWhenMoveDragCellCollectionView:self];
+    __block BOOL flag = NO;
+    [excludeIndexPaths enumerateObjectsUsingBlock:^(NSIndexPath * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+        if (obj.item == indexPath.item && obj.section == indexPath.section) {
+            flag = YES;
+            *stop = YES;
+        }
+    }];
+    return flag;
 }
 
 #pragma mark - public methods
