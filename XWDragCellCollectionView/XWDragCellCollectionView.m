@@ -106,7 +106,13 @@ typedef NS_ENUM(NSUInteger, XWDragCellCollectionViewScrollDirection) {
     //获取手指所在的cell
     _originalIndexPath = [self indexPathForItemAtPoint:[longPressGesture locationOfTouch:0 inView:longPressGesture.view]];
     UICollectionViewCell *cell = [self cellForItemAtIndexPath:_originalIndexPath];
-    UIView *tempMoveCell = [cell snapshotViewAfterScreenUpdates:NO];
+    UIImage *snap;
+    UIGraphicsBeginImageContextWithOptions(cell.bounds.size, 1.0f, 0);
+    [cell.layer renderInContext:UIGraphicsGetCurrentContext()];
+    snap = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    UIView *tempMoveCell = [UIView new];
+    tempMoveCell.layer.contents = (__bridge id)snap.CGImage;
     cell.hidden = YES;
     _tempMoveCell = tempMoveCell;
     _tempMoveCell.frame = cell.frame;
