@@ -30,6 +30,12 @@
 @optional
 
 /**
+ *  某些indexPaths是不需要交换和晃动的，常见的比如添加按钮等，传入这些indexPaths数组排出交换和抖动操作
+ *  @param return   需要排除的indexPath数组，该数组中的indexPath无法长按抖动和交换
+ */
+- (NSArray<NSIndexPath *> *)excludeIndexPathsWhenMoveDragCellCollectionView:(XWDragCellCollectionView *)collectionView;
+
+/**
  *  某个cell将要开始移动的时候调用
  *  @param indexPath      该cell当前的indexPath
  */

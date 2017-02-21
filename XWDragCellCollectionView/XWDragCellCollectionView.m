@@ -21,6 +21,8 @@ typedef NS_ENUM(NSUInteger, XWDragCellCollectionViewScrollDirection) {
 
 @interface XWDragCellCollectionView ()
 @property (nonatomic, strong) NSIndexPath *originalIndexPath;
+@property (nonatomic, weak) UICollectionViewCell *orignalCell;
+@property (nonatomic, assign) CGPoint orignalCenter;
 @property (nonatomic, strong) NSIndexPath *moveIndexPath;
 @property (nonatomic, weak) UIView *tempMoveCell;
 @property (nonatomic, weak) UILongPressGestureRecognizer *longPressGesture;
@@ -37,12 +39,12 @@ typedef NS_ENUM(NSUInteger, XWDragCellCollectionViewScrollDirection) {
 @dynamic delegate;
 @dynamic dataSource;
 
+#pragma mark - initailize methods
+
 - (void)dealloc{
-    [self removeObserver:self forKeyPath:@"contentOffset"];
+    [self xwp_removeContentOffsetObserver];
     [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
-
-#pragma mark - initailize methods
 
 - (instancetype)initWithFrame:(CGRect)frame collectionViewLayout:(nonnull UICollectionViewLayout *)layout
 {
@@ -105,6 +107,9 @@ typedef NS_ENUM(NSUInteger, XWDragCellCollectionViewScrollDirection) {
 - (void)xwp_gestureBegan:(UILongPressGestureRecognizer *)longPressGesture{
     //获取手指所在的cell
     _originalIndexPath = [self indexPathForItemAtPoint:[longPressGesture locationOfTouch:0 inView:longPressGesture.view]];
+    if ([self xwp_indexPathIsExcluded:_originalIndexPath]) {
+        return;
+    }
     UICollectionViewCell *cell = [self cellForItemAtIndexPath:_originalIndexPath];
     UIImage *snap;
     UIGraphicsBeginImageContextWithOptions(cell.bounds.size, 1.0f, 0);
@@ -114,18 +119,22 @@ typedef NS_ENUM(NSUInteger, XWDragCellCollectionViewScrollDirection) {
     UIView *tempMoveCell = [UIView new];
     tempMoveCell.layer.contents = (__bridge id)snap.CGImage;
     cell.hidden = YES;
+    //记录cell，不能通过_originalIndexPath,在重用之后原indexpath所对应的cell可能不会是这个cell了
+    _orignalCell = cell;
+    //记录ceter，同理不能通过_originalIndexPath来获取cell
+    _orignalCenter = cell.center;
     _tempMoveCell = tempMoveCell;
     _tempMoveCell.frame = cell.frame;
     [self addSubview:_tempMoveCell];
-    
     //开启边缘滚动定时器
     [self xwp_setEdgeTimer];
     //开启抖动
-    if (_shakeWhenMoveing && !_editing) {
+    if (!_editing) {
         [self xwp_shakeAllCell];
-        [self addObserver:self forKeyPath:@"contentOffset" options:NSKeyValueObservingOptionNew context:nil];
     }
     _lastPoint = [longPressGesture locationOfTouch:0 inView:longPressGesture.view];
+    //添加监听
+    [self xwp_addContentOffsetObserver];
     //通知代理
     if ([self.delegate respondsToSelector:@selector(dragCellCollectionView:cellWillBeginMoveAtIndexPath:)]) {
         [self.delegate dragCellCollectionView:self cellWillBeginMoveAtIndexPath:_originalIndexPath];
@@ -158,12 +167,17 @@ typedef NS_ENUM(NSUInteger, XWDragCellCollectionViewScrollDirection) {
         [self.delegate dragCellCollectionViewCellEndMoving:self];
     }
     [UIView animateWithDuration:0.25 animations:^{
-        _tempMoveCell.center = cell.center;
+        _tempMoveCell.center = _orignalCenter;
     } completion:^(BOOL finished) {
         [self xwp_stopShakeAllCell];
         [_tempMoveCell removeFromSuperview];
         cell.hidden = NO;
+        _orignalCell.hidden = NO;
         self.userInteractionEnabled = YES;
+        _originalIndexPath = nil;
+        if (!_editing) {
+            [self xwp_removeContentOffsetObserver];
+        }
     }];
 }
 
@@ -200,7 +214,7 @@ typedef NS_ENUM(NSUInteger, XWDragCellCollectionViewScrollDirection) {
 
 - (void)xwp_moveCell{
     for (UICollectionViewCell *cell in [self visibleCells]) {
-        if ([self indexPathForCell:cell] == _originalIndexPath) {
+        if ([self indexPathForCell:cell] == _originalIndexPath || [self xwp_indexPathIsExcluded:[self indexPathForCell:cell]]) {
             continue;
         }
         //计算中心距
@@ -208,10 +222,20 @@ typedef NS_ENUM(NSUInteger, XWDragCellCollectionViewScrollDirection) {
         CGFloat spacingY = fabs(_tempMoveCell.center.y - cell.center.y);
         if (spacingX <= _tempMoveCell.bounds.size.width / 2.0f && spacingY <= _tempMoveCell.bounds.size.height / 2.0f) {
             _moveIndexPath = [self indexPathForCell:cell];
+            _orignalCell = cell;
+            _orignalCenter = cell.center;
             //更新数据源
             [self xwp_updateDataSource];
             //移动
+            NSLog(@"%@", [self cellForItemAtIndexPath:_originalIndexPath]);
+//            cell.hidden = YES;
+            [CATransaction begin];
             [self moveItemAtIndexPath:_originalIndexPath toIndexPath:_moveIndexPath];
+            NSLog(@"%@", [self cellForItemAtIndexPath:_originalIndexPath]);
+            [CATransaction setCompletionBlock:^{
+                NSLog(@"动画完成");
+            }];
+            [CATransaction commit];
             //通知代理
             if ([self.delegate respondsToSelector:@selector(dragCellCollectionView:moveCellFromIndexPath:toIndexPath:)]) {
                 [self.delegate dragCellCollectionView:self moveCellFromIndexPath:_originalIndexPath toIndexPath:_moveIndexPath];
@@ -299,6 +323,16 @@ typedef NS_ENUM(NSUInteger, XWDragCellCollectionViewScrollDirection) {
 }
 
 - (void)xwp_shakeAllCell{
+    if (!_shakeWhenMoveing) {
+        //没有开启抖动只需要遍历设置个cell的hidden属性
+        NSArray *cells = [self visibleCells];
+        for (UICollectionViewCell *cell in cells) {
+            //顺便设置各个cell的hidden属性，由于有cell被hidden，其hidden状态可能被冲用到其他cell上,不能直接利用_originalIndexPath相等判断，这很坑
+            BOOL hidden = _originalIndexPath && [self indexPathForCell:cell].item == _originalIndexPath.item && [self indexPathForCell:cell].section == _originalIndexPath.section;
+            cell.hidden = hidden;
+        }
+        return;
+    }
     CAKeyframeAnimation* anim=[CAKeyframeAnimation animation];
     anim.keyPath=@"transform.rotation";
     anim.values=@[@(angelToRandian(-_shakeLevel)),@(angelToRandian(_shakeLevel)),@(angelToRandian(-_shakeLevel))];
@@ -306,10 +340,16 @@ typedef NS_ENUM(NSUInteger, XWDragCellCollectionViewScrollDirection) {
     anim.duration=0.2;
     NSArray *cells = [self visibleCells];
     for (UICollectionViewCell *cell in cells) {
+        if ([self xwp_indexPathIsExcluded:[self indexPathForCell:cell]]) {
+            continue;
+        }
         /**如果加了shake动画就不用再加了*/
         if (![cell.layer animationForKey:@"shake"]) {
             [cell.layer addAnimation:anim forKey:@"shake"];
         }
+        //顺便设置各个cell的hidden属性，由于有cell被hidden，其hidden状态可能被冲用到其他cell上
+        BOOL hidden = _originalIndexPath && [self indexPathForCell:cell].item == _originalIndexPath.item && [self indexPathForCell:cell].section == _originalIndexPath.section;
+        cell.hidden = hidden;
     }
     if (![_tempMoveCell.layer animationForKey:@"shake"]) {
         [_tempMoveCell.layer addAnimation:anim forKey:@"shake"];
@@ -325,7 +365,6 @@ typedef NS_ENUM(NSUInteger, XWDragCellCollectionViewScrollDirection) {
         [cell.layer removeAllAnimations];
     }
     [_tempMoveCell.layer removeAllAnimations];
-    [self removeObserver:self forKeyPath:@"contentOffset"];
 }
 
 - (void)xwp_setScrollDirection{
@@ -345,6 +384,33 @@ typedef NS_ENUM(NSUInteger, XWDragCellCollectionViewScrollDirection) {
     }
 }
 
+- (void)xwp_addContentOffsetObserver{
+    if (_observering) return;
+    [self addObserver:self forKeyPath:@"contentOffset" options:NSKeyValueObservingOptionNew context:nil];
+    _observering = YES;
+}
+
+- (void)xwp_removeContentOffsetObserver{
+    if (!_observering) return;
+    [self removeObserver:self forKeyPath:@"contentOffset"];
+    _observering = NO;
+}
+
+- (BOOL)xwp_indexPathIsExcluded:(NSIndexPath *)indexPath{
+    if (!indexPath || ![self.delegate respondsToSelector:@selector(excludeIndexPathsWhenMoveDragCellCollectionView:)]) {
+        return NO;
+    }
+    NSArray<NSIndexPath *> *excludeIndexPaths = [self.delegate excludeIndexPathsWhenMoveDragCellCollectionView:self];
+    __block BOOL flag = NO;
+    [excludeIndexPaths enumerateObjectsUsingBlock:^(NSIndexPath * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+        if (obj.item == indexPath.item && obj.section == indexPath.section) {
+            flag = YES;
+            *stop = YES;
+        }
+    }];
+    return flag;
+}
+
 #pragma mark - public methods
 
 - (void)xw_enterEditingModel{
@@ -353,7 +419,7 @@ typedef NS_ENUM(NSUInteger, XWDragCellCollectionViewScrollDirection) {
     _longPressGesture.minimumPressDuration = 0;
     if (_shakeWhenMoveing) {
         [self xwp_shakeAllCell];
-        [self addObserver:self forKeyPath:@"contentOffset" options:NSKeyValueObservingOptionNew context:nil];
+        [self xwp_addContentOffsetObserver];
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(xwp_foreground) name:UIApplicationWillEnterForegroundNotification object:nil];
     }
 }
@@ -362,6 +428,7 @@ typedef NS_ENUM(NSUInteger, XWDragCellCollectionViewScrollDirection) {
     _editing = NO;
     _longPressGesture.minimumPressDuration = _oldMinimumPressDuration;
     [self xwp_stopShakeAllCell];
+    [self xwp_removeContentOffsetObserver];
     [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationWillEnterForegroundNotification object:nil];
 }
 
@@ -377,32 +444,12 @@ typedef NS_ENUM(NSUInteger, XWDragCellCollectionViewScrollDirection) {
     return [super hitTest:point withEvent:event];
 }
 
-- (void)addObserver:(NSObject *)observer forKeyPath:(NSString *)keyPath options:(NSKeyValueObservingOptions)options context:(void *)context{
-    if ([keyPath isEqualToString:@"contentOffset"]) {
-        if (_observering) {
-            return;
-        }else{
-            _observering = YES;
-        }
-    }
-    [super addObserver:observer forKeyPath:keyPath options:options context:context];
-}
-
-- (void)removeObserver:(NSObject *)observer forKeyPath:(NSString *)keyPath{
-    if ([keyPath isEqualToString:@"contentOffset"]) {
-        if (!_observering) {
-            return;
-        }else{
-            _observering = NO;
-        }
-    }
-    [super removeObserver:observer forKeyPath:keyPath];
-}
-
 #pragma mark - KVO
 
 - (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSString *,id> *)change context:(void *)context{
-    [self xwp_shakeAllCell];
+    if ([keyPath isEqualToString:@"contentOffset"]) {
+        [self xwp_shakeAllCell];
+    }
 }
 
 #pragma mark - notification
@@ -412,5 +459,7 @@ typedef NS_ENUM(NSUInteger, XWDragCellCollectionViewScrollDirection) {
         [self xwp_shakeAllCell];
     }
 }
+
+
 
 @end
