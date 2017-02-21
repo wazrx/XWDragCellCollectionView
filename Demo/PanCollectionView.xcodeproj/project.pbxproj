@@ -128,7 +128,7 @@
 				TargetAttributes = {
 					40A234221C3A609F008B710C = {
 						CreatedOnToolsVersion = 7.1;
-						DevelopmentTeam = 744X6WBZV4;
+						DevelopmentTeam = 4TH838523D;
 					};
 				};
 			};
@@ -285,6 +285,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = 4TH838523D;
 				INFOPLIST_FILE = PanCollectionView/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.youloft.PanCollectionView;
@@ -297,6 +298,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = 4TH838523D;
 				INFOPLIST_FILE = PanCollectionView/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.youloft.PanCollectionView;

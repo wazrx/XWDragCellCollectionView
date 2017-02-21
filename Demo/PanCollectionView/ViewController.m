@@ -23,7 +23,7 @@
     [super viewDidLoad];
     self.title = @"XWDragCellCollectionView";
     UICollectionViewFlowLayout *layout = [UICollectionViewFlowLayout new];
-    layout.itemSize = CGSizeMake(80, 80);
+    layout.itemSize = CGSizeMake(120, 120);
     layout.sectionInset = UIEdgeInsetsMake(10, 10, 10, 10);
     XWDragCellCollectionView *mainView = [[XWDragCellCollectionView alloc] initWithFrame:self.view.bounds collectionViewLayout:layout];
     _mainView = mainView;
