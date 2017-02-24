@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		3BFA00F61E6034BE00CB6345 /* XWDragCellCollectionView.m in Sources */ = {isa = PBXBuildFile; fileRef = 3BFA00F51E6034BE00CB6345 /* XWDragCellCollectionView.m */; };
 		40A234281C3A609F008B710C /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 40A234271C3A609F008B710C /* main.m */; };
 		40A2342B1C3A609F008B710C /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 40A2342A1C3A609F008B710C /* AppDelegate.m */; };
 		40A2342E1C3A609F008B710C /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 40A2342D1C3A609F008B710C /* ViewController.m */; };
@@ -15,11 +16,12 @@
 		40A234361C3A60A0008B710C /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 40A234341C3A60A0008B710C /* LaunchScreen.storyboard */; };
 		40A2343F1C3A60C2008B710C /* XWCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 40A2343E1C3A60C2008B710C /* XWCell.m */; };
 		40A234411C3A60DD008B710C /* XWCell.xib in Resources */ = {isa = PBXBuildFile; fileRef = 40A234401C3A60DD008B710C /* XWCell.xib */; };
-		40A234441C3A64C1008B710C /* XWDragCellCollectionView.m in Sources */ = {isa = PBXBuildFile; fileRef = 40A234431C3A64C1008B710C /* XWDragCellCollectionView.m */; };
 		8BC29DAD1C3AC63900DEF66D /* XWCellModel.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BC29DAC1C3AC63900DEF66D /* XWCellModel.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		3BFA00F41E6034BE00CB6345 /* XWDragCellCollectionView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = XWDragCellCollectionView.h; path = ../../XWDragCellCollectionView/XWDragCellCollectionView.h; sourceTree = "<group>"; };
+		3BFA00F51E6034BE00CB6345 /* XWDragCellCollectionView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = XWDragCellCollectionView.m; path = ../../XWDragCellCollectionView/XWDragCellCollectionView.m; sourceTree = "<group>"; };
 		40A234231C3A609F008B710C /* PanCollectionView.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PanCollectionView.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		40A234271C3A609F008B710C /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		40A234291C3A609F008B710C /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
@@ -33,8 +35,6 @@
 		40A2343D1C3A60C2008B710C /* XWCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = XWCell.h; sourceTree = "<group>"; };
 		40A2343E1C3A60C2008B710C /* XWCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = XWCell.m; sourceTree = "<group>"; };
 		40A234401C3A60DD008B710C /* XWCell.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = XWCell.xib; sourceTree = "<group>"; };
-		40A234421C3A64C1008B710C /* XWDragCellCollectionView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = XWDragCellCollectionView.h; sourceTree = "<group>"; };
-		40A234431C3A64C1008B710C /* XWDragCellCollectionView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = XWDragCellCollectionView.m; sourceTree = "<group>"; };
 		8BC29DAB1C3AC63900DEF66D /* XWCellModel.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = XWCellModel.h; sourceTree = "<group>"; };
 		8BC29DAC1C3AC63900DEF66D /* XWCellModel.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = XWCellModel.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -69,12 +69,12 @@
 		40A234251C3A609F008B710C /* PanCollectionView */ = {
 			isa = PBXGroup;
 			children = (
+				3BFA00F41E6034BE00CB6345 /* XWDragCellCollectionView.h */,
+				3BFA00F51E6034BE00CB6345 /* XWDragCellCollectionView.m */,
 				40A234291C3A609F008B710C /* AppDelegate.h */,
 				40A2342A1C3A609F008B710C /* AppDelegate.m */,
 				40A2342C1C3A609F008B710C /* ViewController.h */,
 				40A2342D1C3A609F008B710C /* ViewController.m */,
-				40A234421C3A64C1008B710C /* XWDragCellCollectionView.h */,
-				40A234431C3A64C1008B710C /* XWDragCellCollectionView.m */,
 				40A2343D1C3A60C2008B710C /* XWCell.h */,
 				40A2343E1C3A60C2008B710C /* XWCell.m */,
 				8BC29DAB1C3AC63900DEF66D /* XWCellModel.h */,
@@ -123,7 +123,7 @@
 		40A2341B1C3A609F008B710C /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0710;
+				LastUpgradeCheck = 0800;
 				ORGANIZATIONNAME = wazrx;
 				TargetAttributes = {
 					40A234221C3A609F008B710C = {
@@ -172,9 +172,9 @@
 				40A2342E1C3A609F008B710C /* ViewController.m in Sources */,
 				40A2342B1C3A609F008B710C /* AppDelegate.m in Sources */,
 				8BC29DAD1C3AC63900DEF66D /* XWCellModel.m in Sources */,
+				3BFA00F61E6034BE00CB6345 /* XWDragCellCollectionView.m in Sources */,
 				40A2343F1C3A60C2008B710C /* XWCell.m in Sources */,
 				40A234281C3A609F008B710C /* main.m in Sources */,
-				40A234441C3A64C1008B710C /* XWDragCellCollectionView.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -213,8 +213,10 @@
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
@@ -256,8 +258,10 @@
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
