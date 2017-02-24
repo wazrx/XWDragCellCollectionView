@@ -31,6 +31,7 @@ typedef NS_ENUM(NSUInteger, XWDragCellCollectionViewScrollDirection) {
 @property (nonatomic, assign) XWDragCellCollectionViewScrollDirection scrollDirection;
 @property (nonatomic, assign) CGFloat oldMinimumPressDuration;
 @property (nonatomic, assign, getter=isObservering) BOOL observering;
+@property (nonatomic) BOOL isPanning;
 
 @end
 
@@ -52,6 +53,8 @@ typedef NS_ENUM(NSUInteger, XWDragCellCollectionViewScrollDirection) {
     if (self) {
         [self xwp_initializeProperty];
         [self xwp_addGesture];
+        //添加监听
+        [self xwp_addContentOffsetObserver];
     }
     return self;
 }
@@ -62,6 +65,8 @@ typedef NS_ENUM(NSUInteger, XWDragCellCollectionViewScrollDirection) {
     if (self) {
         [self xwp_initializeProperty];
         [self xwp_addGesture];
+        //添加监听
+        [self xwp_addContentOffsetObserver];
     }
     return self;
 }
@@ -110,6 +115,7 @@ typedef NS_ENUM(NSUInteger, XWDragCellCollectionViewScrollDirection) {
     if ([self xwp_indexPathIsExcluded:_originalIndexPath]) {
         return;
     }
+    _isPanning = YES;
     UICollectionViewCell *cell = [self cellForItemAtIndexPath:_originalIndexPath];
     UIImage *snap;
     UIGraphicsBeginImageContextWithOptions(cell.bounds.size, 1.0f, 0);
@@ -118,7 +124,10 @@ typedef NS_ENUM(NSUInteger, XWDragCellCollectionViewScrollDirection) {
     UIGraphicsEndImageContext();
     UIView *tempMoveCell = [UIView new];
     tempMoveCell.layer.contents = (__bridge id)snap.CGImage;
-    cell.hidden = YES;
+//    cell.hidden = YES;
+    UICollectionViewLayoutAttributes *cellLayout = [self.collectionViewLayout layoutAttributesForItemAtIndexPath:_originalIndexPath];
+    cellLayout.hidden = YES;
+    [cell applyLayoutAttributes:cellLayout];
     //记录cell，不能通过_originalIndexPath,在重用之后原indexpath所对应的cell可能不会是这个cell了
     _orignalCell = cell;
     //记录ceter，同理不能通过_originalIndexPath来获取cell
@@ -133,8 +142,6 @@ typedef NS_ENUM(NSUInteger, XWDragCellCollectionViewScrollDirection) {
         [self xwp_shakeAllCell];
     }
     _lastPoint = [longPressGesture locationOfTouch:0 inView:longPressGesture.view];
-    //添加监听
-    [self xwp_addContentOffsetObserver];
     //通知代理
     if ([self.delegate respondsToSelector:@selector(dragCellCollectionView:cellWillBeginMoveAtIndexPath:)]) {
         [self.delegate dragCellCollectionView:self cellWillBeginMoveAtIndexPath:_originalIndexPath];
@@ -161,6 +168,7 @@ typedef NS_ENUM(NSUInteger, XWDragCellCollectionViewScrollDirection) {
 - (void)xwp_gestureEndOrCancle:(UILongPressGestureRecognizer *)longPressGesture{
     UICollectionViewCell *cell = [self cellForItemAtIndexPath:_originalIndexPath];
     self.userInteractionEnabled = NO;
+    _isPanning = NO;
     [self xwp_stopEdgeTimer];
     //通知代理
     if ([self.delegate respondsToSelector:@selector(dragCellCollectionViewCellEndMoving:)]) {
@@ -175,9 +183,6 @@ typedef NS_ENUM(NSUInteger, XWDragCellCollectionViewScrollDirection) {
         _orignalCell.hidden = NO;
         self.userInteractionEnabled = YES;
         _originalIndexPath = nil;
-        if (!_editing) {
-            [self xwp_removeContentOffsetObserver];
-        }
     }];
 }
 
@@ -231,7 +236,6 @@ typedef NS_ENUM(NSUInteger, XWDragCellCollectionViewScrollDirection) {
 //            cell.hidden = YES;
             [CATransaction begin];
             [self moveItemAtIndexPath:_originalIndexPath toIndexPath:_moveIndexPath];
-            NSLog(@"%@", [self cellForItemAtIndexPath:_originalIndexPath]);
             [CATransaction setCompletionBlock:^{
                 NSLog(@"动画完成");
             }];
@@ -428,7 +432,6 @@ typedef NS_ENUM(NSUInteger, XWDragCellCollectionViewScrollDirection) {
     _editing = NO;
     _longPressGesture.minimumPressDuration = _oldMinimumPressDuration;
     [self xwp_stopShakeAllCell];
-    [self xwp_removeContentOffsetObserver];
     [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationWillEnterForegroundNotification object:nil];
 }
 
@@ -447,8 +450,11 @@ typedef NS_ENUM(NSUInteger, XWDragCellCollectionViewScrollDirection) {
 #pragma mark - KVO
 
 - (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSString *,id> *)change context:(void *)context{
-    if ([keyPath isEqualToString:@"contentOffset"]) {
+    if (![keyPath isEqualToString:@"contentOffset"]) return;
+    if (_editing || _isPanning) {
         [self xwp_shakeAllCell];
+    }else if (!_editing && !_isPanning){
+        [self xwp_stopShakeAllCell];
     }
 }
 

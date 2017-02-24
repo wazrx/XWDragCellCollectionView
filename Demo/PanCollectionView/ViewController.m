@@ -11,6 +11,8 @@
 #import "XWCellModel.h"
 #import "XWDragCellCollectionView.h"
 
+#define XWLog(fmt, ...) fprintf(stderr,"%s:%d\t%s\n",[[[NSString stringWithUTF8String:__FILE__] lastPathComponent] UTF8String], __LINE__, [[NSString stringWithFormat:fmt, ##__VA_ARGS__] UTF8String]);
+
 @interface ViewController ()<XWDragCellCollectionViewDataSource, XWDragCellCollectionViewDelegate>
 @property (nonatomic, strong) NSArray *data;
 @property (nonatomic, weak) XWDragCellCollectionView *mainView;
@@ -23,8 +25,10 @@
     [super viewDidLoad];
     self.title = @"XWDragCellCollectionView";
     UICollectionViewFlowLayout *layout = [UICollectionViewFlowLayout new];
-    layout.itemSize = CGSizeMake(120, 120);
+    CGFloat width = (self.view.bounds.size.width - 40) / 3.0f;
+    layout.itemSize = CGSizeMake(width, width);
     layout.sectionInset = UIEdgeInsetsMake(10, 10, 10, 10);
+    layout.minimumInteritemSpacing = 10;
     XWDragCellCollectionView *mainView = [[XWDragCellCollectionView alloc] initWithFrame:self.view.bounds collectionViewLayout:layout];
     _mainView = mainView;
     mainView.delegate = self;
@@ -42,9 +46,9 @@
     if (!_data) {
         NSMutableArray *temp = @[].mutableCopy;
         NSArray *colors = @[[UIColor redColor], [UIColor blueColor], [UIColor yellowColor], [UIColor orangeColor], [UIColor greenColor]];
-        for (int i = 0; i < 1; i ++) {
+        for (int i = 0; i < 5; i ++) {
             NSMutableArray *tempSection = @[].mutableCopy;
-            for (int j = 0; j < 8; j ++) {
+            for (int j = 0; j < arc4random() % 12 + 6; j ++) {
                 NSString *str = [NSString stringWithFormat:@"%d--%d", i, j];
                 XWCellModel *model = [XWCellModel new];
                 model.backGroundColor = colors[i];
@@ -111,7 +115,12 @@
 }
 
 - (NSArray<NSIndexPath *> *)excludeIndexPathsWhenMoveDragCellCollectionView:(XWDragCellCollectionView *)collectionView{
-    return @[[NSIndexPath indexPathForItem:7 inSection:0]];
+    //每个section的最后一个cell都不能交换
+    NSMutableArray * excluedeIndexPaths = [NSMutableArray arrayWithCapacity:self.data.count];
+    [self.data enumerateObjectsUsingBlock:^(NSArray*  _Nonnull section, NSUInteger idx, BOOL * _Nonnull stop) {
+        [excluedeIndexPaths addObject:[NSIndexPath indexPathForItem:section.count - 1 inSection:idx]];
+    }];
+    return excluedeIndexPaths.copy;
 }
 
 
